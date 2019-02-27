@@ -1,0 +1,7 @@
+suites:
+    default:
+        namespace: App
+        psr4_prefix: App
+        spec_path: tests
+        src_path: src
+        spec_prefix: specs

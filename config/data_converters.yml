@@ -1,0 +1,8 @@
+data_converters:
+    # Default data converters natively supported:
+    - App\Processor\Converter\TextAttributeConverter
+    - App\Processor\Converter\SingleOptionConverter
+    - App\Processor\Converter\MultipleOptionsConverter
+    - App\Processor\Converter\ReferenceEntitySingleLinkConverter
+    - App\Processor\Converter\ReferenceEntityMultipleLinksConverter
+    # Feel free to add your own converters here:
