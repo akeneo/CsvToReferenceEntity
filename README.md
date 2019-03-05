@@ -1,11 +1,11 @@
-# TODO
+# CsvToRefenceEntity
 > Migrate data from [CustomEntityBundle](https://github.com/akeneo-labs/CustomEntityBundle) to Akeneo Reference Entities (_available since 3.0_), using CSV file import.
 
 # Installation
 
 ```bash
-git clone akeneo/XXXX tool
-cd tool
+git clone git@github.com:akeneo/CsvToRefenceEntity.git csv_to_reference_entity
+cd csv_to_reference_entity
 composer install
 ```
 
