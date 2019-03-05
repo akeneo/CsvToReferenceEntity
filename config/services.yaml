@@ -20,3 +20,5 @@ services:
     Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientBuilder:
         arguments:
             $baseUri: '%env(AKENEO_API_BASE_URI)%'
+
+    Box\Spout\Writer\CSV\Writer: ~
