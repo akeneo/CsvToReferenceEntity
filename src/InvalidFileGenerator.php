@@ -9,6 +9,7 @@ use Box\Spout\Writer\WriterFactory;
 use Box\Spout\Common\Type;
 use Box\Spout\Writer\WriterInterface;
 use Box\Spout\Writer\CSV\Writer;
+use Box\Spout\Common\Helper\GlobalFunctionsHelper;
 
 /**
  * Generate a file containing all invalid lines in the original file
@@ -59,9 +60,20 @@ class InvalidFileGenerator
         $this->writer->addRow($row);
     }
 
+    public function hasInvalidFile(): bool
+    {
+        return !$this->isFirstLine;
+    }
+
+    public function getInvalidFilePath(): string
+    {
+        return $this->invalidPath;
+    }
+
     private function initializeFile(string $filePath, array $headers): void
     {
         $pathInfo = pathinfo($filePath);
+        $this->writer->setGlobalFunctionsHelper(new GlobalFunctionsHelper());
         $this->invalidPath = sprintf('%s/%s_invalid_items_%s.csv', $pathInfo['dirname'], $pathInfo['filename'], time());
         $this->writer->openToFile($this->invalidPath);
         $this->writer->addRow($headers);

@@ -215,6 +215,11 @@ class ImportCommand extends Command
             $this->logger->numUpdated,
             $this->logger->numSkipped
         ));
+
+        if ($this->invalidFileGenerator->hasInvalidFile()) {
+            $io->text(['Invalid items file generated here:', $this->invalidFileGenerator->getInvalidFilePath()]);
+            $io->newLine(2);
+        }
     }
 
     private function indexAttributes(array $attributes) {

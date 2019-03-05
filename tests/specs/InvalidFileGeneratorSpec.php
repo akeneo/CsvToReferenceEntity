@@ -21,6 +21,7 @@ class InvalidFileGeneratorSpec extends ObjectBehavior
 
     function it_should_write_invalid_line_for_the_given_invalid_response($writer) {
         $writer->openToFile(Argument::any())->shouldBeCalled();
+        $writer->setGlobalFunctionsHelper(Argument::any())->shouldBeCalled();
         $writer->addRow(['code', 'label-en_US'])->shouldBeCalled();
         $writer->addRow(['ikea',12])->shouldBeCalled();
 
@@ -34,6 +35,7 @@ class InvalidFileGeneratorSpec extends ObjectBehavior
 
     function it_should_write_invalid_line_for_the_given_valid_response($writer) {
         $writer->openToFile(Argument::any())->shouldNotBeCalled();
+        $writer->setGlobalFunctionsHelper(Argument::any())->shouldNotBeCalled();
         $writer->addRow(['code', 'label-en_US'])->shouldNotBeCalled();
         $writer->addRow(['ikea',12])->shouldNotBeCalled();
 
@@ -47,6 +49,7 @@ class InvalidFileGeneratorSpec extends ObjectBehavior
 
     function it_should_write_invalid_line_for_the_given_invalid_row($writer) {
         $writer->openToFile(Argument::any())->shouldBeCalled();
+        $writer->setGlobalFunctionsHelper(Argument::any())->shouldBeCalled();
         $writer->addRow(['code', 'label-en_US'])->shouldBeCalled();
         $writer->addRow(['ikea',12])->shouldBeCalled();
         $writer->addRow(['akeneo',15])->shouldBeCalled();
