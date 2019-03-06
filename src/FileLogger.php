@@ -58,14 +58,11 @@ class FileLogger
         foreach ($responses as $response) {
             $statusCode = $response['status_code'];
 
-            if($statusCode >= 200 && $statusCode < 300) {
-                if (201 === $statusCode) {
-                    $this->numCreated++;
-                }
-
-                if (204 === $statusCode) {
-                    $this->numUpdated++;
-                }
+            //switch to switch
+            if (201 === $statusCode) {
+                $this->numCreated++;
+            } elseif (204 === $statusCode) {
+                $this->numUpdated++;
             } else {
                 $this->numSkipped++;
                 $this->logger->warning(

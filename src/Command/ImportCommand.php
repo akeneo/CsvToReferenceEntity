@@ -147,7 +147,7 @@ class ImportCommand extends Command
             $io->text('They are either not defined in your PIM for this reference entity, or their context is not valid (channel or locale unrecognized)');
             $continue = $io->confirm('Do you still want to proceed?');
 
-            if (!$continue) return;
+            if (!$continue) exit;
         }
 
         $indexedAttributes = $this->indexAttributes($attributes);

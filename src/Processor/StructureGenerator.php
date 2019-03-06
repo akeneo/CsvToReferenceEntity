@@ -9,6 +9,8 @@ use App\Processor\Converter\DataConverter;
 /**
  * Helper to generate the structure of the value collection
  *
+ * TODO add desc
+ *
  * @author    Julien Sanchez <julien@akeneo.com>
  * @copyright 2019 Akeneo SAS (https://www.akeneo.com)
  * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)

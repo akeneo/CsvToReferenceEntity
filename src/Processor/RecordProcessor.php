@@ -25,16 +25,16 @@ class RecordProcessor
         $values = $line;
         unset($values['code']);
 
-        $valuesToProcess = [];
+        $values = [];
         foreach ($attributes as $attribute) {
             $attributeCode = $attribute['code'];
-            $valuesToProcess[$attributeCode] = [];
+            $values[$attributeCode] = [];
             $attributeValueKeys = $indexedValueKeys[$attributeCode];
 
             foreach ($attributeValueKeys as $attributeValueKey) {
                 $context = $this->valueKeyGenerator->extract($attribute, $attributeValueKey);
 
-                $valuesToProcess[$attributeCode][] = [
+                $values[$attributeCode][] = [
                     'channel' => $context['channel'],
                     'locale' => $context['locale'],
                     'data' => $this->dataConverter->convert($attribute, $values[$attributeValueKey]),
@@ -44,7 +44,7 @@ class RecordProcessor
 
         return [
             'code' => $line['code'],
-            'values' => $valuesToProcess,
+            'values' => $values,
         ];
     }
 }
