@@ -191,9 +191,6 @@ class ImportCommand extends Command
         return iterator_to_array($this->apiClient->getChannelApi()->all(100));
     }
 
-    /**
-     *
-     */
     private function filterValidValueKeys(array $attributes, array $channels): array
     {
         $structure = $this->structureGenerator->generate($attributes, $channels);
