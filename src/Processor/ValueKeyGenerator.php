@@ -88,7 +88,8 @@ class ValueKeyGenerator
      * Extract "value key" information (attribute, locale & channel) from the given $valueKey for the given $attribute
      * and returns them as an indexed array.
      *
-     * ie.: ['attribute' => 'description', 'channel' => 'mobile', 'locale' => 'fr_FR']
+     * eg.: 'description-fr_FR-mobile' will return
+     * ['attribute' => 'description', 'channel' => 'mobile', 'locale' => 'fr_FR']
      *
      * @param array  $attribute
      * @param string $valueKey
