@@ -47,6 +47,12 @@ class FileLogger
         $this->logger->info($message, $context);
     }
 
+    public function skip(string $message, array $context = []): void
+    {
+        $this->logger->warning($message, $context);
+        $this->numSkipped++;
+    }
+
     public function startLogging()
     {
         $this->logFilePath = $this->generateLogFilePath();
@@ -58,16 +64,17 @@ class FileLogger
         foreach ($responses as $response) {
             $statusCode = $response['status_code'];
 
-            //switch to switch
-            if (201 === $statusCode) {
-                $this->numCreated++;
-            } elseif (204 === $statusCode) {
-                $this->numUpdated++;
-            } else {
-                $this->numSkipped++;
-                $this->logger->warning(
-                    sprintf('Skipped record "%s", an error occured during import: %s', $response['code'], json_encode($response['errors']))
-                );
+            switch ($statusCode) {
+                case 201:
+                    $this->numCreated++;
+                    break;
+                case 204:
+                    $this->numUpdated++;
+                    break;
+                default:
+                    $this->skip(
+                        sprintf('Skipped record "%s", an error occured during import: %s', $response['code'], json_encode($response['errors']))
+                    );
             }
         }
     }
