@@ -34,5 +34,8 @@ class ReferenceEntityMultipleLinksConverterSpec extends ObjectBehavior
 
         $data = 'first_code,second_code';
         $this->convert($attribute, $data)->shouldReturn(['first_code', 'second_code']);
+
+        $data = '';
+        $this->convert($attribute, $data)->shouldReturn([]);
     }
 }
