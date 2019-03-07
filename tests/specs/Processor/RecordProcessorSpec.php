@@ -19,8 +19,8 @@ class RecordProcessorSpec extends ObjectBehavior
     {
         $line = [
             'code' => 'ikea',
-            'description-mobile-fr_FR' => 'Description française',
-            'description-mobile-en_US' => 'English description',
+            'description-fr_FR-mobile' => 'Description française',
+            'description-en_US-mobile' => 'English description',
             'founded' => '1977'
         ];
 
@@ -36,28 +36,13 @@ class RecordProcessorSpec extends ObjectBehavior
             'value_per_locale' => false,
         ];
 
-        $attributes = [
-            $descriptionAttribute,
-            $foundedAttribute,
-        ];
-
-        $indexedValueKeys = [
-            'description' => [
-                'description-mobile-en_US',
-                'description-mobile-fr_FR',
-            ],
-            'founded' => [
-                'founded'
-            ]
-        ];
-
-        $valueKeyGenerator->extract($descriptionAttribute, 'description-mobile-en_US')->willReturn([
+        $valueKeyGenerator->extract($descriptionAttribute, 'description-en_US-mobile')->willReturn([
             'attribute' => 'description',
             'channel' => 'mobile',
             'locale' => 'en_US'
         ]);
 
-        $valueKeyGenerator->extract($descriptionAttribute, 'description-mobile-fr_FR')->willReturn([
+        $valueKeyGenerator->extract($descriptionAttribute, 'description-fr_FR-mobile')->willReturn([
             'attribute' => 'description',
             'channel' => 'mobile',
             'locale' => 'fr_FR'
@@ -73,7 +58,13 @@ class RecordProcessorSpec extends ObjectBehavior
         $dataConverter->convert($descriptionAttribute, 'English description')->willReturn('English description');
         $dataConverter->convert($foundedAttribute, '1977')->willReturn('1977');
 
-        $this->process($line, $attributes, $indexedValueKeys)->shouldReturn([
+        $validStructure = [
+            'description-en_US-mobile' => $descriptionAttribute,
+            'description-fr_FR-mobile' => $descriptionAttribute,
+            'founded' => $foundedAttribute
+        ];
+
+        $this->process($line, $validStructure)->shouldReturn([
             'code' => 'ikea',
             'values' => [
                 'description' => [
