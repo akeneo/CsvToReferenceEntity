@@ -23,23 +23,19 @@ class StructureGenerator
     /** @var DataConverter */
     private $converter;
 
-    public function __construct(ValueKeyGenerator $valueKeyGenerator, DataConverter $converter) {
+    public function __construct(ValueKeyGenerator $valueKeyGenerator, DataConverter $converter)
+    {
         $this->valueKeyGenerator = $valueKeyGenerator;
         $this->converter = $converter;
     }
 
-    public function generate(array $attributes, array $headers, array $channels) {
-      return array_reduce($attributes, function (array $indexedValueKeys, array $attribute) use ($headers, $channels) {
-          if ($this->converter->support($attribute)) {
-              $attributeSupportedValueKeys = $this->valueKeyGenerator->generate($attribute, $channels);
-              $attributeValueKeysToProcess = array_intersect($headers, $attributeSupportedValueKeys);
+    public function generate(array $attributes, array $channels): array
+    {
+        $valueKeys = [];
+        foreach ($attributes as $attribute) {
+            $valueKeys = array_merge($valueKeys, $this->valueKeyGenerator->generate($attribute, $channels));
+        }
 
-              if (!empty($attributeValueKeysToProcess)) {
-                  $indexedValueKeys[$attribute['code']] = $attributeValueKeysToProcess;
-              }
-          }
-
-          return $indexedValueKeys;
-      }, []);
+        return $valueKeys;
     }
 }
