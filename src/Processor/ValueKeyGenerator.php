@@ -15,16 +15,16 @@ class ValueKeyGenerator
 {
     /**
      * Generates all "value keys" combinations for the given $attribute on given $channels
-     * and return them as an array of strings.
+     * and return them as an array of $attribute indexed by a value key.
      *
      * Ie.:
-     * - "description-en_US-mobile"
-     * - "description-en_US-ecommerce"
-     * - "description-fr_FR-mobile"
-     * - "description-fr_FR-ecommerce"
-     * - "price-mobile"
-     * - "price-ecommerce"
-     * - "name"
+     * - "description-en_US-mobile" => $attribute
+     * - "description-en_US-ecommerce" => $attribute
+     * - "description-fr_FR-mobile" => $attribute
+     * - "description-fr_FR-ecommerce" => $attribute
+     * - "price-mobile" => $attribute
+     * - "price-ecommerce" => $attribute
+     * - "name" => $attribute
      */
     public function generate(array $attribute, array $channels): array
     {
@@ -47,34 +47,38 @@ class ValueKeyGenerator
         if ($hasValuePerChannel && $hasValuePerLocale) {
             foreach ($channelCodes as $channelCode) {
                 foreach ($indexedLocaleCodes[$channelCode] as $localeCode) {
-                    $valueKeys[] = sprintf(
+                    $key = sprintf(
                         '%s-%s-%s',
                         $attribute['code'],
                         $localeCode,
                         $channelCode
                     );
+                    $valueKeys[$key] = $attribute;
                 }
             }
         } elseif ($hasValuePerChannel) {
             foreach ($channelCodes as $channelCode) {
                 if ($channelCode === $channelCode) {
-                    $valueKeys[] = sprintf(
+                    $key = sprintf(
                         '%s-%s',
                         $attribute['code'],
                         $channelCode
                     );
+                    $valueKeys[$key] = $attribute;
                 }
             }
         } elseif ($hasValuePerLocale) {
             foreach ($localeCodes as $localeCode) {
-                $valueKeys[] = sprintf(
+                $key = sprintf(
                     '%s-%s',
                     $attribute['code'],
                     $localeCode
                 );
+                $valueKeys[$key] = $attribute;
             }
         } else {
-            $valueKeys[] = $attribute['code'];
+            $key = $attribute['code'];
+            $valueKeys[$key] = $attribute;
         }
 
         return $valueKeys;
