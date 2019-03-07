@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface;
 use App\FileLogger;
 use App\Processor\Converter\DataConverter;
 use App\Processor\RecordProcessor;
@@ -32,6 +33,8 @@ class ImportCommand extends Command
 {
     protected static $defaultName = 'app:import';
 
+    private const BATCH_SIZE = 100;
+
     /** @var StructureGenerator */
     private $structureGenerator;
 
@@ -49,6 +52,15 @@ class ImportCommand extends Command
 
     /** @var InvalidFileGenerator */
     private $invalidFileGenerator;
+
+    /** @var SymfonyStyle */
+    private $io;
+
+    /** @var AkeneoPimEnterpriseClientInterface */
+    private $apiClient;
+
+    /** @var CsvReader */
+    private $reader;
 
     public function __construct(
         StructureGenerator $structureGenerator,
@@ -83,21 +95,14 @@ class ImportCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
+        $this->logger->startLogging();
 
         $referenceEntityCode = $input->getArgument('referenceEntityCode');
-
-        $apiClientId = $input->getOption('apiClientId');
-        $apiClientSecret = $input->getOption('apiClientSecret');
-        $apiUsername = $input->getOption('apiUsername');
-        $apiPassword = $input->getOption('apiPassword');
-
-        $batchSize = 100;
-
         $filePath = $input->getArgument('filePath');
 
         try {
-            $reader = new CsvReader(
+            $this->reader = new CsvReader(
                 $filePath, [
                     'fieldDelimiter' => ';',
                     'fieldEnclosure' => '"',
@@ -105,111 +110,48 @@ class ImportCommand extends Command
                 ]
             );
         } catch (IOException|UnsupportedTypeException|ReaderNotOpenedException $e) {
-            $io->error($e->getMessage());
+            $this->io->error($e->getMessage());
 
-            return;
+            exit;
         }
 
-        $client = $this->clientBuilder->buildAuthenticatedByPassword(
-            $apiClientId,
-            $apiClientSecret,
-            $apiUsername,
-            $apiPassword
-        );
-        $recordWriter = new RecordWriter($client);
-
-        $io->title('Custom entity bundle migration tool');
-        $io->text([
+        $this->io->title('Custom entity bundle migration tool');
+        $this->io->text([
             'Welcome to this migration tool made to help migrate your records from the Custom',
             'Entity bundle to the new Reference entity feature You are currently using the "interactive mode".',
             'If you want to automate this process or don\'t want to use default values, add the --no-interaction flag when you call this command.'
         ]);
 
-        $io->newLine(2);
-        $io->title(sprintf(
-            'Retrieving information from your Akeneo PIM instance (%s)... ',
-            getenv('AKENEO_API_BASE_URI')
-        ));
+        $this->initializeApiClient($input);
 
-        $attributes = $client->getReferenceEntityAttributeApi()->all($referenceEntityCode);
-        $channels = iterator_to_array($client->getChannelApi()->all(100));
+        $this->io->newLine(2);
+        $this->io->title(
+            sprintf(
+                'Retrieving information from your Akeneo PIM instance (%s)... ',
+                getenv('AKENEO_API_BASE_URI')
+            )
+        );
 
-        $io->success('OK');
+        $attributes = $this->fetchReferenceEntityAttributes($referenceEntityCode);
+        $channels = $this->fetchChannels();
 
-        $headers = $reader->getHeaders();
-        $indexedValueKeysToProcess = $this->structureGenerator->generate($attributes, $headers, $channels);
-        $valueKeysToProcess = $this->flattenValueKeys($indexedValueKeysToProcess);
+        $this->io->success('OK');
 
-        $valueKeysToSkip = array_diff($headers, array_merge($valueKeysToProcess, ['code']));
-        if (count($valueKeysToSkip) > 0) {
-            $io->title('The following properties won\'t be imported by this tool:');
-            $io->listing($valueKeysToSkip);
-            $io->text('They are either not defined in your PIM for this reference entity, or their context is not valid (channel or locale unrecognized)');
-            $continue = $io->confirm('Do you still want to proceed?');
+        // Filter what we gonna process from file
+        $validValueKeys = $this->filterValidValueKeys($attributes, $channels);
 
-            if (!$continue) exit;
-        }
+        $this->io->title(
+            sprintf('Start importing file "%s" for reference entity "%s"', $filePath, $referenceEntityCode)
+        );
+        $this->io->text('Everything will be logged here:');
+        $this->io->text($this->logger->getLogFilePath());
+        $this->io->newLine(2);
 
-        $indexedAttributes = $this->indexAttributes($attributes);
+        // Import records
+        $this->importRecords($output, $filePath, $referenceEntityCode, $validValueKeys, $attributes, $channels);
 
-        $attributesToProcess = array_intersect_key($indexedAttributes, $indexedValueKeysToProcess);
-
-        $this->logger->startLogging();
-        $this->logger->info(sprintf('Skipped colums: %s', json_encode(array_values($valueKeysToSkip))));
-
-        $io->title(sprintf('Start importing file "%s" for reference entity "%s"', $filePath, $referenceEntityCode));
-        $io->text('Everything will be logged here:');
-        $io->text($this->logger->getLogFilePath());
-        $io->newLine(2);
-
-        $progressBar = new ProgressBar($output, $reader->count());
-        $progressBar->start();
-
-        $recordsToWrite = [];
-        $linesToWrite = [];
-        foreach ($reader as $lineNumber => $row) {
-            if ($lineNumber === 1) continue;
-
-            if (count($headers) !== count($row)) {
-                $this->logger->warning(
-                    sprintf(
-                        'Skipped line %s: the number of values is not equal to the number of headers',
-                        $lineNumber
-                    )
-                );
-                $this->logger->numSkipped++;
-                $this->invalidFileGenerator->fromRow($row, $filePath, $headers);
-
-                continue;
-            }
-
-            $line = array_combine($headers, $row);
-            $recordsToWrite[] = $this->processor->process($line, $attributesToProcess, $indexedValueKeysToProcess);
-            $linesToWrite[] = $line;
-
-            if (count($recordsToWrite) === $batchSize) {
-                $responses = $recordWriter->write($referenceEntityCode, $recordsToWrite);
-                $this->logger->logResponses($responses);
-                $this->invalidFileGenerator->fromResponses($responses, $linesToWrite, $filePath, $headers);
-
-                $recordsToWrite = [];
-                $linesToWrite = [];
-                $progressBar->advance($batchSize);
-            }
-        }
-
-        if (!empty($recordsToWrite)) {
-            $responses = $recordWriter->write($referenceEntityCode, $recordsToWrite);
-            $this->logger->logResponses($responses);
-            $this->invalidFileGenerator->fromResponses($responses, $linesToWrite, $filePath, $headers);
-
-            $progressBar->advance(count($recordsToWrite));
-        }
-
-        $progressBar->finish();
-
-        $io->newLine(2);
-        $io->success(sprintf(
+        $this->io->newLine(2);
+        $this->io->success(sprintf(
             'Done (%s created, %s updated, %s skipped)',
             $this->logger->numCreated,
             $this->logger->numUpdated,
@@ -217,24 +159,151 @@ class ImportCommand extends Command
         ));
 
         if ($this->invalidFileGenerator->hasInvalidFile()) {
-            $io->text(['Invalid items file generated here:', $this->invalidFileGenerator->getInvalidFilePath()]);
-            $io->newLine(2);
+            $this->io->text(['Invalid items file generated here:', $this->invalidFileGenerator->getInvalidFilePath()]);
+            $this->io->newLine(2);
         }
     }
 
-    private function indexAttributes(array $attributes) {
-        return array_reduce($attributes, function ($indexedAttributes, $attribute) {
-            $indexedAttributes[$attribute['code']] = $attribute;
-
-            return $indexedAttributes;
-        }, []);
+    private function initializeApiClient(InputInterface $input): void
+    {
+        $this->apiClient = $this->clientBuilder->buildAuthenticatedByPassword(
+            $input->getOption('apiClientId'),
+            $input->getOption('apiClientSecret'),
+            $input->getOption('apiUsername'),
+            $input->getOption('apiPassword')
+        );
     }
 
-    private function flattenValueKeys(array $indexedValueKeysToProcess) {
-        return array_reduce($indexedValueKeysToProcess, function (array $valueKeysToProcess, array $indexedValueKeyToProcess) {
-            $valueKeysToProcess += $indexedValueKeyToProcess;
+    private function fetchReferenceEntityAttributes(string $referenceEntityCode): array
+    {
+        $attributes = $this->apiClient->getReferenceEntityAttributeApi()->all($referenceEntityCode);
 
-            return $valueKeysToProcess;
-        }, []);
+        $indexedAttributes = [];
+        foreach ($attributes as $attribute) {
+            $indexedAttributes[$attribute['code']] = $attribute;
+        }
+
+        return $indexedAttributes;
+    }
+
+    private function fetchChannels(): array
+    {
+        return iterator_to_array($this->apiClient->getChannelApi()->all(100));
+    }
+
+    /**
+     *
+     */
+    private function filterValidValueKeys(array $attributes, array $channels): array
+    {
+        $structure = $this->structureGenerator->generate($attributes, $channels);
+        $validValueKeys = array_keys($structure);
+
+        $invalidHeaders = array_diff($this->reader->getHeaders(), array_merge($validValueKeys, ['code']));
+        $validHeaders = array_diff($this->reader->getHeaders(), $invalidHeaders);
+
+        $unsupportedHeaders = array_filter($validHeaders, function ($header) use ($structure) {
+            return 'code' !== $header && !$this->converter->support($structure[$header]);
+        });
+
+        if (!empty($invalidHeaders)) {
+            $this->logger->info(sprintf('Invalid headers: %s', json_encode(array_values($invalidHeaders))));
+        }
+
+        if (!empty($unsupportedHeaders)) {
+            $this->logger->info(sprintf('Unsupported headers: %s', json_encode(array_values($unsupportedHeaders))));
+        }
+
+        if (count($invalidHeaders) > 0) {
+            $this->io->title('The following properties won\'t be imported by this tool:');
+            $this->io->listing($invalidHeaders);
+            $this->io->text(
+                'They are either not defined in your PIM for this reference entity, or their context is not valid (channel or locale unrecognized)'
+            );
+
+            $this->io->title('The following properties are not supported by this tool and will be skipped:');
+            $this->io->listing($unsupportedHeaders);
+            $this->io->text(
+                'There is no converter registered that supports these attributes'
+            );
+
+            $continue = $this->io->confirm('Do you still want to proceed?');
+
+            if (!$continue) {
+                exit;
+            }
+        }
+
+        return array_diff($validHeaders, $unsupportedHeaders);
+    }
+
+    private function importRecords(
+        OutputInterface $output,
+        string $filePath,
+        string $referenceEntityCode,
+        array $validValueKeys,
+        array $attributes,
+        array $channels
+    ): void {
+        $progressBar = new ProgressBar($output, $this->reader->count());
+        $progressBar->start();
+
+        $recordWriter = new RecordWriter($this->apiClient);
+
+        $recordsToWrite = [];
+        $linesToWrite = [];
+
+        foreach ($this->reader as $lineNumber => $row) {
+            if ($lineNumber === 1) {
+                continue;
+            }
+
+            if (count($this->reader->getHeaders()) !== count($row)) {
+                $this->logger->skip(sprintf(
+                    'Skipped line %s: the number of values is not equal to the number of headers',
+                    $lineNumber
+                ));
+                $this->invalidFileGenerator->fromRow($row, $filePath, $this->reader->getHeaders());
+
+                continue;
+            }
+
+            $line = array_combine($this->reader->getHeaders(), $row);
+            $validHeaders = array_intersect($this->reader->getHeaders(), $validValueKeys);
+
+            $structure = $this->structureGenerator->generate($attributes, $channels);
+            $validStructure = array_intersect_key($structure, array_flip($validHeaders));
+
+            $recordsToWrite[] = $this->processor->process($line, $validStructure);
+            $linesToWrite[] = $line;
+
+            if (count($recordsToWrite) === self::BATCH_SIZE) {
+                $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite);
+
+                $recordsToWrite = [];
+                $linesToWrite = [];
+                $progressBar->advance(self::BATCH_SIZE);
+            }
+        }
+
+        if (!empty($recordsToWrite)) {
+            $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite);
+            $progressBar->advance(count($recordsToWrite));
+        }
+
+        $progressBar->finish();
+    }
+
+    private function writeRecords(
+        string $filePath,
+        string $referenceEntityCode,
+        RecordWriter $recordWriter,
+        array $recordsToWrite,
+        array $linesToWrite
+    ): void {
+        $responses = $recordWriter->write($referenceEntityCode, $recordsToWrite);
+
+        $this->logger->logResponses($responses);
+        $this->invalidFileGenerator->fromResponses($responses, $linesToWrite, $filePath, $this->reader->getHeaders());
     }
 }
