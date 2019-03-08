@@ -35,6 +35,10 @@ class ImportCommand extends Command
 
     private const BATCH_SIZE = 100;
 
+    private const CSV_FIELD_DELIMITER = ';';
+    private const CSV_FIELD_ENCLOSURE = '"';
+    private const CSV_END_OF_LINE_CHARACTER = "\n";
+
     /** @var StructureGenerator */
     private $structureGenerator;
 
@@ -104,9 +108,9 @@ class ImportCommand extends Command
         try {
             $this->reader = new CsvReader(
                 $filePath, [
-                    'fieldDelimiter' => ';',
-                    'fieldEnclosure' => '"',
-                    'endOfLineCharacter' => "\n",
+                    'fieldDelimiter' => self::CSV_FIELD_DELIMITER,
+                    'fieldEnclosure' => self::CSV_FIELD_ENCLOSURE,
+                    'endOfLineCharacter' => self::CSV_END_OF_LINE_CHARACTER,
                 ]
             );
         } catch (IOException|UnsupportedTypeException|ReaderNotOpenedException $e) {
