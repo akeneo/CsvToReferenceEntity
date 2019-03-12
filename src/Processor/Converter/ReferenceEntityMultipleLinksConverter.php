@@ -26,6 +26,10 @@ class ReferenceEntityMultipleLinksConverter implements DataConverterInterface
      */
     public function convert(array $attribute, string $data)
     {
+        if (empty($data)) {
+            return [];
+        }
+
         return explode(',', $data);
     }
 }

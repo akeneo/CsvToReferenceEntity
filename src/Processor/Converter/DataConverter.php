@@ -43,6 +43,12 @@ class DataConverter implements DataConverterInterface
                 return $converter->convert($attribute, $data);
             }
         }
+
+        throw new \RuntimeException(sprintf(
+            'No converter found to convert data "%s" for attribute "%s"',
+            $data,
+            json_encode($attribute)
+        ));
     }
 
     /**

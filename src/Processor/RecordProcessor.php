@@ -20,31 +20,22 @@ class RecordProcessor
         $this->dataConverter = $dataConverter;
     }
 
-    public function process(array $line, array $attributes, array $indexedValueKeys): array
+    public function process(array $line, array $validStructure): array
     {
-        $values = $line;
-        unset($values['code']);
+        $values = [];
+        foreach ($validStructure as $valueKey => $attribute) {
+            $context = $this->valueKeyGenerator->extract($attribute, $valueKey);
 
-        $valuesToProcess = [];
-        foreach ($attributes as $attribute) {
-            $attributeCode = $attribute['code'];
-            $valuesToProcess[$attributeCode] = [];
-            $attributeValueKeys = $indexedValueKeys[$attributeCode];
-
-            foreach ($attributeValueKeys as $attributeValueKey) {
-                $context = $this->valueKeyGenerator->extract($attribute, $attributeValueKey);
-
-                $valuesToProcess[$attributeCode][] = [
-                    'channel' => $context['channel'],
-                    'locale' => $context['locale'],
-                    'data' => $this->dataConverter->convert($attribute, $values[$attributeValueKey]),
-                ];
-            }
+            $values[$attribute['code']][] = [
+                'channel' => $context['channel'],
+                'locale' => $context['locale'],
+                'data' => $this->dataConverter->convert($attribute, $line[$valueKey]),
+            ];
         }
 
         return [
             'code' => $line['code'],
-            'values' => $valuesToProcess,
+            'values' => $values,
         ];
     }
 }

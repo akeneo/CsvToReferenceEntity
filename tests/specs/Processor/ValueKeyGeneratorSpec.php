@@ -31,7 +31,7 @@ class ValueKeyGeneratorSpec extends ObjectBehavior
             'value_per_channel' => false,
             'value_per_locale' => false,
         ];
-        $this->generate($attribute, $channels)->shouldReturn(['name']);
+        $this->generate($attribute, $channels)->shouldReturn(['name' => $attribute]);
 
         // Not scopable and localizable attribute
         $attribute = [
@@ -40,8 +40,8 @@ class ValueKeyGeneratorSpec extends ObjectBehavior
             'value_per_locale' => true,
         ];
         $this->generate($attribute, $channels)->shouldReturn([
-            'name-en_US',
-            'name-fr_FR',
+            'name-en_US' => $attribute,
+            'name-fr_FR' => $attribute,
         ]);
 
         // Scopable and not localizable attribute
@@ -51,8 +51,8 @@ class ValueKeyGeneratorSpec extends ObjectBehavior
             'value_per_locale' => false,
         ];
         $this->generate($attribute, $channels)->shouldReturn([
-            'name-mobile',
-            'name-ecommerce',
+            'name-mobile' => $attribute,
+            'name-ecommerce' => $attribute,
         ]);
 
         // Scopable and localizable attribute
@@ -62,9 +62,9 @@ class ValueKeyGeneratorSpec extends ObjectBehavior
             'value_per_locale' => true,
         ];
         $this->generate($attribute, $channels)->shouldReturn([
-            'name-en_US-mobile',
-            'name-fr_FR-mobile',
-            'name-en_US-ecommerce',
+            'name-en_US-mobile' => $attribute,
+            'name-fr_FR-mobile' => $attribute,
+            'name-en_US-ecommerce' => $attribute,
         ]);
     }
 
