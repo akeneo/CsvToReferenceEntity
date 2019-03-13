@@ -1,5 +1,5 @@
 # CsvToRefenceEntity
-> Migrate data from [CustomEntityBundle](https://github.com/akeneo-labs/CustomEntityBundle) to Akeneo Reference Entities (_available since 3.0_), using CSV file import.
+> Migrate data from [CustomEntityBundle](https://github.com/akeneo-labs/CustomEntityBundle), or initialize data from an ERP/MDM, to Akeneo Reference Entities records (_available since 3.0_), using CSV file import.
 
 # Installation
 
@@ -29,7 +29,7 @@ AKENEO_API_PASSWORD=admin
 # How to Use
 
 ## 1) Create Reference Entities in your PIM instance
-In your PIM instance, you will need to create your structure for your records. In short, you'll need to create your reference entities first, to define their attributes, if they have a value per channel/locale, etc.
+In your PIM instance, you will need to create your structure for your records. In short, you'll need to [create your reference entity](https://help.akeneo.com/pim/v3/articles/manage-reference-entities.html#create-a-reference-entity) first, to define their attributes, if they have a value per channel/locale, etc.
 
 ## 2) Generate your .csv file
 The only **required field** is the `code`. Regarding attributes, it depends on whether they have a value per channel/locale (_we use the same structure as for products_):
