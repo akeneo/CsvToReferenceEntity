@@ -72,9 +72,18 @@ class FileLogger
                     $this->numUpdated++;
                     break;
                 default:
-                    $this->skip(
-                        sprintf('Skipped record "%s", an error occured during import: %s', $response['code'], json_encode($response['errors']))
-                    );
+                    if (isset($response['code']) && isset($response['errors'])) {
+                        $this->skip(
+                            sprintf(
+                                'Skipped record "%s", an error occured during import: %s',
+                                $response['code'],
+                                json_encode($response['errors'])
+                            )
+                        );
+                    } else {
+                        $this->skip(json_encode($response));
+                    }
+
             }
         }
     }
