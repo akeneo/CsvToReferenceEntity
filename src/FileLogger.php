@@ -83,7 +83,6 @@ class FileLogger
                     } else {
                         $this->skip(json_encode($response));
                     }
-
             }
         }
     }
