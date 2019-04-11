@@ -1,0 +1,13 @@
+language: php
+sudo: false
+php: 7.2
+
+cache:
+    directories:
+        - $HOME/.composer/cache/files
+
+install:
+    - composer install
+
+script:
+    - ./vendor/bin/phpspec run
