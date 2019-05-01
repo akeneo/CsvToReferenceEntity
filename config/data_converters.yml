@@ -6,3 +6,4 @@ data_converters:
     - App\Processor\Converter\ReferenceEntitySingleLinkConverter
     - App\Processor\Converter\ReferenceEntityMultipleLinksConverter
     # Feel free to add your own converters here:
+    - App\Processor\Converter\MediaConverter

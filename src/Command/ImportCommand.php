@@ -94,6 +94,7 @@ class ImportCommand extends Command
             ->addOption('apiPassword', null, InputOption::VALUE_OPTIONAL, 'The password of the user.', getenv('AKENEO_API_PASSWORD'))
             ->addOption('apiClientId', null, InputOption::VALUE_OPTIONAL, '', getenv('AKENEO_API_CLIENT_ID'))
             ->addOption('apiClientSecret', null, InputOption::VALUE_OPTIONAL, '', getenv('AKENEO_API_CLIENT_SECRET'))
+            ->addOption('importMedia', null, InputOption::VALUE_OPTIONAL, '', false)
         ;
     }
 
@@ -104,6 +105,7 @@ class ImportCommand extends Command
 
         $referenceEntityCode = $input->getArgument('referenceEntityCode');
         $filePath = $input->getArgument('filePath');
+        $importMedia = (bool)$input->getOption('importMedia');
 
         try {
             $this->reader = new CsvReader(
@@ -152,7 +154,7 @@ class ImportCommand extends Command
         $this->io->newLine(2);
 
         // Import records
-        $this->importRecords($output, $filePath, $referenceEntityCode, $validValueKeys, $attributes, $channels);
+        $this->importRecords($output, $filePath, $referenceEntityCode, $validValueKeys, $attributes, $channels, $importMedia);
 
         $this->io->newLine(2);
         $this->io->success(sprintf(
@@ -244,7 +246,8 @@ class ImportCommand extends Command
         string $referenceEntityCode,
         array $validValueKeys,
         array $attributes,
-        array $channels
+        array $channels,
+        $importMedia = false
     ): void {
         $progressBar = new ProgressBar($output, $this->reader->count());
         $progressBar->start();
@@ -279,7 +282,7 @@ class ImportCommand extends Command
             $linesToWrite[] = $line;
 
             if (count($recordsToWrite) === self::BATCH_SIZE) {
-                $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite);
+                $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite, $importMedia);
 
                 $recordsToWrite = [];
                 $linesToWrite = [];
@@ -288,7 +291,7 @@ class ImportCommand extends Command
         }
 
         if (!empty($recordsToWrite)) {
-            $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite);
+            $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite, $importMedia);
             $progressBar->advance(count($recordsToWrite));
         }
 
@@ -300,9 +303,10 @@ class ImportCommand extends Command
         string $referenceEntityCode,
         RecordWriter $recordWriter,
         array $recordsToWrite,
-        array $linesToWrite
+        array $linesToWrite,
+        $importMedia = false
     ): void {
-        $responses = $recordWriter->write($referenceEntityCode, $recordsToWrite);
+        $responses = $recordWriter->write($referenceEntityCode, $recordsToWrite, $importMedia);
 
         $this->logger->logResponses($responses);
         $this->invalidFileGenerator->fromResponses($responses, $linesToWrite, $filePath, $this->reader->getHeaders());
