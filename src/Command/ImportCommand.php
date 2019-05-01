@@ -94,7 +94,7 @@ class ImportCommand extends Command
             ->addOption('apiPassword', null, InputOption::VALUE_OPTIONAL, 'The password of the user.', getenv('AKENEO_API_PASSWORD'))
             ->addOption('apiClientId', null, InputOption::VALUE_OPTIONAL, '', getenv('AKENEO_API_CLIENT_ID'))
             ->addOption('apiClientSecret', null, InputOption::VALUE_OPTIONAL, '', getenv('AKENEO_API_CLIENT_SECRET'))
-            ->addOption('importMedia', null, InputOption::VALUE_OPTIONAL, '', false)
+            ->addOption('importMedia', 'i', InputOption::VALUE_NONE, 'Allow to import media or not. Cell content of the CSV must have an encoded json format with "filePath":"/path/to/folder/picture.png"')
         ;
     }
 
