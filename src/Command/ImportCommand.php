@@ -245,12 +245,12 @@ class ImportCommand extends Command
                 continue;
             }
 
-            if (count($this->reader->getHeaders()) !== count($row)) {
-                $this->logger->skip(sprintf(
+            if (!$this->isHeaderValid($row)) {
+                $message = sprintf(
                     'Skipped line %s: the number of values is not equal to the number of headers',
                     $lineNumber
-                ));
-                $this->invalidFileGenerator->fromRow($row, $filePath, $this->reader->getHeaders());
+                );
+                $this->skipRowWithMessage($filePath, $row, $message);
 
                 continue;
             }
@@ -261,7 +261,13 @@ class ImportCommand extends Command
             $structure = $this->structureGenerator->generate($attributes, $channels);
             $validStructure = array_intersect_key($structure, array_flip($validHeaders));
 
-            $recordsToWrite[] = $this->processor->process($line, $validStructure, $filePath);
+            try {
+                $recordsToWrite[] = $this->processor->process($line, $validStructure, $filePath);
+            } catch (\Exception $e) {
+                $this->skipRowWithMessage($filePath, $row, $e->getMessage());
+
+                continue;
+            }
             $linesToWrite[] = $line;
 
             if (count($recordsToWrite) === self::BATCH_SIZE) {
@@ -292,5 +298,16 @@ class ImportCommand extends Command
 
         $this->logger->logResponses($responses);
         $this->invalidFileGenerator->fromResponses($responses, $linesToWrite, $filePath, $this->reader->getHeaders());
+    }
+
+    private function isHeaderValid($row): bool
+    {
+        return count($this->reader->getHeaders()) === count($row);
+    }
+
+    private function skipRowWithMessage(string $filePath, $row, string $message): void
+    {
+        $this->logger->skip($message);
+        $this->invalidFileGenerator->fromRow($row, $filePath, $this->reader->getHeaders());
     }
 }

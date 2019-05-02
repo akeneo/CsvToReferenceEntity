@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Processor\Converter;
 
 use Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface;
+use App\ApiClientFactory;
+use http\Exception\RuntimeException;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * @author    Samir Boulil <samir.boulil@akeneo.com>
@@ -18,9 +21,13 @@ class MediaAttributeConverter implements DataConverterInterface
     /** @var AkeneoPimEnterpriseClientInterface */
     private $pimClient;
 
-    public function __construct(AkeneoPimEnterpriseClientInterface $pimClient)
+    /** @var Filesystem */
+    private $filesystem;
+
+    public function __construct(ApiClientFactory $apiClientFactory, Filesystem $filesystem)
     {
-        $this->pimClient = $pimClient;
+        $this->pimClient = $apiClientFactory->build();
+        $this->filesystem = $filesystem;
     }
 
     public function support(array $attribute): bool
@@ -31,7 +38,8 @@ class MediaAttributeConverter implements DataConverterInterface
     public function convert(array $attribute, string $data, array $context)
     {
         $mediaFilePath = $this->mediaFilePath($data, $context);
-        $mediaIdentifier = $this->pimClient->getReferenceEntityMediaFileApi()->create($mediaFilePath);
+        $this->checkMediaExists($mediaFilePath);
+        $mediaIdentifier = $this->uploadMediaToPIM($mediaFilePath);
 
         return $mediaIdentifier;
     }
@@ -41,5 +49,29 @@ class MediaAttributeConverter implements DataConverterInterface
         $fileToImportPath = $context['filePath'];
 
         return sprintf('%s%s%s', dirname($fileToImportPath), DIRECTORY_SEPARATOR, $relativeMediaPath);
+    }
+
+    private function checkMediaExists(string $mediaFilePath): void
+    {
+        if (!$this->filesystem->exists($mediaFilePath)) {
+            throw new \RuntimeException(sprintf('media file at path "%s" was not found.', $mediaFilePath));
+        }
+    }
+
+    private function uploadMediaToPIM(string $mediaFilePath): string
+    {
+        try {
+            $mediaIdentifier = $this->pimClient->getReferenceEntityMediaFileApi()->create($mediaFilePath);
+
+            return $mediaIdentifier;
+        } catch (\Exception $exception) {
+            $message = sprintf(
+                'An error occured while uploading the media at path "%s" to the PIM: %s',
+                $mediaFilePath,
+                $exception->getMessage()
+            );
+
+            throw new \RuntimeException($message);
+        }
     }
 }
