@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface;
+use App\ApiClientFactory;
 use App\FileLogger;
 use App\Processor\Converter\DataConverter;
 use App\Processor\RecordProcessor;
@@ -42,9 +43,6 @@ class ImportCommand extends Command
     /** @var StructureGenerator */
     private $structureGenerator;
 
-    /** @var AkeneoPimEnterpriseClientBuilder */
-    private $clientBuilder;
-
     /** @var DataConverter */
     private $converter;
 
@@ -68,20 +66,20 @@ class ImportCommand extends Command
 
     public function __construct(
         StructureGenerator $structureGenerator,
-        AkeneoPimEnterpriseClientBuilder $clientBuilder,
         DataConverter $converter,
         RecordProcessor $processor,
         FileLogger $logger,
-        InvalidFileGenerator $invalidFileGenerator
+        InvalidFileGenerator $invalidFileGenerator,
+        ApiClientFactory $apiClientFactory
     ) {
         parent::__construct(static::$defaultName);
 
         $this->structureGenerator = $structureGenerator;
-        $this->clientBuilder = $clientBuilder;
         $this->converter = $converter;
         $this->processor = $processor;
         $this->logger = $logger;
         $this->invalidFileGenerator = $invalidFileGenerator;
+        $this->apiClient = $apiClientFactory->build();
     }
 
     protected function configure()
@@ -126,8 +124,6 @@ class ImportCommand extends Command
             'If you want to automate this process or don\'t want to use default values, add the --no-interaction flag when you call this command.'
         ]);
 
-        $this->initializeApiClient($input);
-
         $this->io->newLine(2);
         $this->io->title(
             sprintf(
@@ -166,16 +162,6 @@ class ImportCommand extends Command
             $this->io->text(['Invalid items file generated here:', $this->invalidFileGenerator->getInvalidFilePath()]);
             $this->io->newLine(2);
         }
-    }
-
-    private function initializeApiClient(InputInterface $input): void
-    {
-        $this->apiClient = $this->clientBuilder->buildAuthenticatedByPassword(
-            $input->getOption('apiClientId'),
-            $input->getOption('apiClientSecret'),
-            $input->getOption('apiUsername'),
-            $input->getOption('apiPassword')
-        );
     }
 
     private function fetchReferenceEntityAttributes(string $referenceEntityCode): array
