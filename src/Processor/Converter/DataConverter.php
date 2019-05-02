@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Processor\Converter;
 
-use App\YamlReader;
-
 /**
  * Prepare the data to be sent to the API, using registered dedicated converters
  *
@@ -13,23 +11,16 @@ use App\YamlReader;
  * @copyright 2019 Akeneo SAS (https://www.akeneo.com)
  * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-class DataConverter implements DataConverterInterface
+class DataConverter
 {
     /** @var DataConverterInterface[] */
-    private $converters;
+    private $converters = [];
 
-    /** @var YamlReader */
-    private $yamlReader;
-
-    public function __construct(YamlReader $yamlReader)
+    public function __construct(iterable $dataConverters)
     {
-        $this->yamlReader = $yamlReader;
-        $dataConvertersConfig = $this->yamlReader->parseFile('config/data_converters.yml');
-        $dataConverterClasses = $dataConvertersConfig['data_converters'];
-
-        foreach ($dataConverterClasses as $dataConverterClass) {
-            $this->converters[] = new $dataConverterClass();
-        }
+        $array = [];
+        array_push($array, ...$dataConverters);
+        $this->converters = $array;
     }
 
     /**
