@@ -28,9 +28,9 @@ class TextAttributeConverterSpec extends ObjectBehavior
         $attribute = ['type' => 'text'];
 
         $data = 'This is a lovely data';
-        $this->convert($attribute, $data)->shouldReturn('This is a lovely data');
+        $this->convert($attribute, $data, [])->shouldReturn('This is a lovely data');
 
         $data = 'this,is,not,a,list';
-        $this->convert($attribute, $data)->shouldReturn('this,is,not,a,list');
+        $this->convert($attribute, $data, [])->shouldReturn('this,is,not,a,list');
     }
 }

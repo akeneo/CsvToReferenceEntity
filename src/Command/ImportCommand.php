@@ -275,7 +275,7 @@ class ImportCommand extends Command
             $structure = $this->structureGenerator->generate($attributes, $channels);
             $validStructure = array_intersect_key($structure, array_flip($validHeaders));
 
-            $recordsToWrite[] = $this->processor->process($line, $validStructure);
+            $recordsToWrite[] = $this->processor->process($line, $validStructure, $filePath);
             $linesToWrite[] = $line;
 
             if (count($recordsToWrite) === self::BATCH_SIZE) {

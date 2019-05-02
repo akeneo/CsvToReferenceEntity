@@ -35,12 +35,12 @@ class DataConverter implements DataConverterInterface
     /**
      * {@inheritdoc}
      */
-    public function convert(array $attribute, string $data)
+    public function convert(array $attribute, string $data, array $context)
     {
         /** @var DataConverterInterface $converter */
         foreach ($this->converters as $converter) {
             if ($converter->support($attribute)) {
-                return $converter->convert($attribute, $data);
+                return $converter->convert($attribute, $data, $context);
             }
         }
 

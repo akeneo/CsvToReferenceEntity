@@ -17,6 +17,7 @@ class RecordProcessorSpec extends ObjectBehavior
 
     function it_processes_a_record_line(ValueKeyGenerator $valueKeyGenerator, DataConverter $dataConverter)
     {
+        $filePath = '/path/to/the/file/to/import.csv';
         $line = [
             'code' => 'ikea',
             'description-fr_FR-mobile' => 'Description française',
@@ -54,9 +55,10 @@ class RecordProcessorSpec extends ObjectBehavior
             'locale' => null
         ]);
 
-        $dataConverter->convert($descriptionAttribute, 'Description française')->willReturn('Description française');
-        $dataConverter->convert($descriptionAttribute, 'English description')->willReturn('English description');
-        $dataConverter->convert($foundedAttribute, '1977')->willReturn('1977');
+        $context = ['filePath' => $filePath];
+        $dataConverter->convert($descriptionAttribute, 'Description française', $context)->willReturn('Description française');
+        $dataConverter->convert($descriptionAttribute, 'English description', $context)->willReturn('English description');
+        $dataConverter->convert($foundedAttribute, '1977', $context)->willReturn('1977');
 
         $validStructure = [
             'description-en_US-mobile' => $descriptionAttribute,
@@ -64,7 +66,7 @@ class RecordProcessorSpec extends ObjectBehavior
             'founded' => $foundedAttribute
         ];
 
-        $this->process($line, $validStructure)->shouldReturn([
+        $this->process($line, $validStructure, $filePath)->shouldReturn([
             'code' => 'ikea',
             'values' => [
                 'description' => [

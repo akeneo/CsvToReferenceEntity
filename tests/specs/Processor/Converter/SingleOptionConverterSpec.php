@@ -30,9 +30,9 @@ class SingleOptionConverterSpec extends ObjectBehavior
         $attribute = ['type' => 'single_option'];
 
         $data = 'blue';
-        $this->convert($attribute, $data)->shouldReturn('blue');
+        $this->convert($attribute, $data, [])->shouldReturn('blue');
 
         $data = 'invalid,code';
-        $this->convert($attribute, $data)->shouldReturn('invalid,code');
+        $this->convert($attribute, $data, [])->shouldReturn('invalid,code');
     }
 }

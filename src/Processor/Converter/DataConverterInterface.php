@@ -21,5 +21,5 @@ interface DataConverterInterface
     /**
      * Convert the given $data for the given $attribute to the correct format expected by the Akeneo API
      */
-    public function convert(array $attribute, string $data);
+    public function convert(array $attribute, string $data, array $context);
 }

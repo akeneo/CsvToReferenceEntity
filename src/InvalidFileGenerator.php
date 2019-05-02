@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App;
 
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Box\Spout\Writer\WriterFactory;
-use Box\Spout\Common\Type;
 use Box\Spout\Writer\WriterInterface;
 use Box\Spout\Writer\CSV\Writer;
 use Box\Spout\Common\Helper\GlobalFunctionsHelper;
