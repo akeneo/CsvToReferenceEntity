@@ -24,7 +24,7 @@ class ReferenceEntityMultipleLinksConverter implements DataConverterInterface
     /**
      * {@inheritdoc}
      */
-    public function convert(array $attribute, string $data)
+    public function convert(array $attribute, string $data, array $context)
     {
         if (empty($data)) {
             return [];

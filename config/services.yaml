@@ -11,14 +11,30 @@ services:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
+    # Tags
+    _instanceof:
+        App\Processor\Converter\DataConverterInterface:
+            tags: ['app.data_converter']
+
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/*'
         exclude: '../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
 
+    Box\Spout\Writer\CSV\Writer: ~
+
     Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientBuilder:
         arguments:
             $baseUri: '%env(AKENEO_API_BASE_URI)%'
 
-    Box\Spout\Writer\CSV\Writer: ~
+    Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface:
+        factory: 'Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientBuilder:buildAuthenticatedByPassword'
+        arguments:
+            - '%env(AKENEO_API_CLIENT_ID)%'
+            - '%env(AKENEO_API_CLIENT_SECRET)%'
+            - '%env(AKENEO_API_USERNAME)%'
+            - '%env(AKENEO_API_PASSWORD)%'
+
+    App\Processor\Converter\DataConverter:
+        arguments: [!tagged app.data_converter]

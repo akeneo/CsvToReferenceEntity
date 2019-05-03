@@ -20,7 +20,7 @@ class RecordProcessor
         $this->dataConverter = $dataConverter;
     }
 
-    public function process(array $line, array $validStructure): array
+    public function process(array $line, array $validStructure, string $filePath): array
     {
         $values = [];
         foreach ($validStructure as $valueKey => $attribute) {
@@ -29,7 +29,7 @@ class RecordProcessor
             $values[$attribute['code']][] = [
                 'channel' => $context['channel'],
                 'locale' => $context['locale'],
-                'data' => $this->dataConverter->convert($attribute, $line[$valueKey]),
+                'data' => $this->dataConverter->convert($attribute, $line[$valueKey], ['filePath' => $filePath]),
             ];
         }
 

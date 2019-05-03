@@ -30,12 +30,12 @@ class MultipleOptionsConverterSpec extends ObjectBehavior
         $attribute = ['type' => 'multiple_options'];
 
         $data = 'blue';
-        $this->convert($attribute, $data)->shouldReturn(['blue']);
+        $this->convert($attribute, $data, [])->shouldReturn(['blue']);
 
         $data = 'first_code,second_code';
-        $this->convert($attribute, $data)->shouldReturn(['first_code', 'second_code']);
+        $this->convert($attribute, $data, [])->shouldReturn(['first_code', 'second_code']);
 
         $data = '';
-        $this->convert($attribute, $data)->shouldReturn([]);
+        $this->convert($attribute, $data, [])->shouldReturn([]);
     }
 }
