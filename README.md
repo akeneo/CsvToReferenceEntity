@@ -50,10 +50,12 @@ So, let's imagine this structure for the `brand` reference entity:
 
 This would be a valid file:
 ```csv
-code;description-en_US;description-fr_FR;tags
-ikea;A famous scandinavian brand;Une célèbre marque scandinave;family,nordic
-made.com;A famous english brand;Une célèbre marque anglaise;design,online
+code;description-en_US;description-fr_FR;tags;main_image
+ikea;A famous scandinavian brand;Une célèbre marque scandinave;family,nordic;relative/path/to/image1.jpg
+made.com;A famous english brand;Une célèbre marque anglaise;design,online;relative/path/to/image2.jpg
 ```
+
+There should also be two images living next to this file in the directory `relative/path/to`.
 
 ## 3) Import your file
 
