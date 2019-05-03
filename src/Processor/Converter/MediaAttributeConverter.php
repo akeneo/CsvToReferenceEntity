@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Processor\Converter;
 
 use Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface;
-use App\ApiClientFactory;
-use http\Exception\RuntimeException;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
@@ -24,10 +22,10 @@ class MediaAttributeConverter implements DataConverterInterface
     /** @var Filesystem */
     private $filesystem;
 
-    public function __construct(ApiClientFactory $apiClientFactory, Filesystem $filesystem)
+    public function __construct(AkeneoPimEnterpriseClientInterface $pimClient, Filesystem $filesystem)
     {
-        $this->pimClient = $apiClientFactory->build();
         $this->filesystem = $filesystem;
+        $this->pimClient = $pimClient;
     }
 
     public function support(array $attribute): bool

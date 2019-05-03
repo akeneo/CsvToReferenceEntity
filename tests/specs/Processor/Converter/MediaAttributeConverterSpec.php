@@ -4,7 +4,6 @@ namespace specs\App\Processor\Converter;
 
 use Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface;
 use Akeneo\PimEnterprise\ApiClient\Api\ReferenceEntityMediaFileApiInterface;
-use App\ApiClientFactory;
 use App\Processor\Converter\DataConverterInterface;
 use App\Processor\Converter\MediaAttributeConverter;
 use PhpSpec\ObjectBehavior;
@@ -13,15 +12,13 @@ use Symfony\Component\Filesystem\Filesystem;
 class MediaAttributeConverterSpec extends ObjectBehavior
 {
     function let(
-        ApiClientFactory $apiClientFactory,
         AkeneoPimEnterpriseClientInterface $pimClient,
         ReferenceEntityMediaFileApiInterface $referenceEntityMediaFileApi,
         Filesystem $filesystem
     ) {
-        $apiClientFactory->build()->willReturn($pimClient);
         $pimClient->getReferenceEntityMediaFileApi()->willReturn($referenceEntityMediaFileApi);
 
-        $this->beConstructedWith($apiClientFactory, $filesystem);
+        $this->beConstructedWith($pimClient, $filesystem);
     }
 
     function it_is_initializable()

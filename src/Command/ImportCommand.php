@@ -70,7 +70,7 @@ class ImportCommand extends Command
         RecordProcessor $processor,
         FileLogger $logger,
         InvalidFileGenerator $invalidFileGenerator,
-        ApiClientFactory $apiClientFactory
+        AkeneoPimEnterpriseClientInterface $apiClient
     ) {
         parent::__construct(static::$defaultName);
 
@@ -79,7 +79,7 @@ class ImportCommand extends Command
         $this->processor = $processor;
         $this->logger = $logger;
         $this->invalidFileGenerator = $invalidFileGenerator;
-        $this->apiClient = $apiClientFactory->build();
+        $this->apiClient = $apiClient;
     }
 
     protected function configure()

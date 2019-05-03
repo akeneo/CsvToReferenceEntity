@@ -24,9 +24,13 @@ services:
 
     Box\Spout\Writer\CSV\Writer: ~
 
-    App\ApiClientFactory:
+    Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientBuilder:
         arguments:
-            - '%env(AKENEO_API_BASE_URI)%'
+            $baseUri: '%env(AKENEO_API_BASE_URI)%'
+
+    Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface:
+        factory: 'Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientBuilder:buildAuthenticatedByPassword'
+        arguments:
             - '%env(AKENEO_API_CLIENT_ID)%'
             - '%env(AKENEO_API_CLIENT_SECRET)%'
             - '%env(AKENEO_API_USERNAME)%'
