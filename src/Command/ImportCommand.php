@@ -8,9 +8,9 @@ use Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface;
 use App\ApiClientFactory;
 use App\FileLogger;
 use App\Processor\Converter\DataConverter;
-use App\Processor\RecordProcessor;
+use App\Processor\AssetProcessor;
 use App\Reader\CsvReader;
-use App\Writer\RecordWriter;
+use App\Writer\AssetWriter;
 use Box\Spout\Common\Exception\IOException;
 use Box\Spout\Common\Exception\UnsupportedTypeException;
 use Box\Spout\Reader\Exception\ReaderNotOpenedException;
@@ -46,7 +46,7 @@ class ImportCommand extends Command
     /** @var DataConverter */
     private $converter;
 
-    /** @var RecordProcessor */
+    /** @var AssetProcessor */
     private $processor;
 
     /** @var FileLogger */
@@ -67,7 +67,7 @@ class ImportCommand extends Command
     public function __construct(
         StructureGenerator $structureGenerator,
         DataConverter $converter,
-        RecordProcessor $processor,
+        AssetProcessor $processor,
         FileLogger $logger,
         InvalidFileGenerator $invalidFileGenerator,
         AkeneoPimEnterpriseClientInterface $apiClient
@@ -85,9 +85,9 @@ class ImportCommand extends Command
     protected function configure()
     {
         $this
-            ->setDescription('Import a CSV file as Reference Entity Records')
+            ->setDescription('Import a CSV file as Asset Family Assets')
             ->addArgument('filePath', InputArgument::REQUIRED, 'The filePath of the file to import.')
-            ->addArgument('referenceEntityCode', InputArgument::REQUIRED, 'The reference entity code the records belong to.')
+            ->addArgument('assetFamilyCode', InputArgument::REQUIRED, 'The asset family code the assets belong to.')
             ->addOption('apiUsername', null, InputOption::VALUE_OPTIONAL, 'The username of the user.', getenv('AKENEO_API_USERNAME'))
             ->addOption('apiPassword', null, InputOption::VALUE_OPTIONAL, 'The password of the user.', getenv('AKENEO_API_PASSWORD'))
             ->addOption('apiClientId', null, InputOption::VALUE_OPTIONAL, '', getenv('AKENEO_API_CLIENT_ID'))
@@ -100,7 +100,7 @@ class ImportCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $this->logger->startLogging();
 
-        $referenceEntityCode = $input->getArgument('referenceEntityCode');
+        $assetFamilyCode = $input->getArgument('assetFamilyCode');
         $filePath = $input->getArgument('filePath');
 
         try {
@@ -119,8 +119,8 @@ class ImportCommand extends Command
 
         $this->io->title('Custom entity bundle migration tool');
         $this->io->text([
-            'Welcome to this migration tool made to help migrate your records from the Custom',
-            'Entity bundle to the new Reference entity feature You are currently using the "interactive mode".',
+            'Welcome to this migration tool made to help migrate your assets from the Custom',
+            'Entity bundle to the new Asset manager feature You are currently using the "interactive mode".',
             'If you want to automate this process or don\'t want to use default values, add the --no-interaction flag when you call this command.'
         ]);
 
@@ -132,7 +132,7 @@ class ImportCommand extends Command
             )
         );
 
-        $attributes = $this->fetchReferenceEntityAttributes($referenceEntityCode);
+        $attributes = $this->fetchAssetFamilyAttributes($assetFamilyCode);
         $channels = $this->fetchChannels();
 
         $this->io->success('OK');
@@ -141,14 +141,14 @@ class ImportCommand extends Command
         $validValueKeys = $this->filterValidValueKeys($attributes, $channels);
 
         $this->io->title(
-            sprintf('Start importing file "%s" for reference entity "%s"', $filePath, $referenceEntityCode)
+            sprintf('Start importing file "%s" for Asset manager "%s"', $filePath, $assetFamilyCode)
         );
         $this->io->text('Everything will be logged here:');
         $this->io->text($this->logger->getLogFilePath());
         $this->io->newLine(2);
 
-        // Import records
-        $this->importRecords($output, $filePath, $referenceEntityCode, $validValueKeys, $attributes, $channels);
+        // Import assets
+        $this->importAssets($output, $filePath, $assetFamilyCode, $validValueKeys, $attributes, $channels);
 
         $this->io->newLine(2);
         $this->io->success(sprintf(
@@ -164,9 +164,9 @@ class ImportCommand extends Command
         }
     }
 
-    private function fetchReferenceEntityAttributes(string $referenceEntityCode): array
+    private function fetchAssetFamilyAttributes(string $assetFamilyCode): array
     {
-        $attributes = $this->apiClient->getReferenceEntityAttributeApi()->all($referenceEntityCode);
+        $attributes = $this->apiClient->getAssetAttributeApi()->all($assetFamilyCode);
 
         $indexedAttributes = [];
         foreach ($attributes as $attribute) {
@@ -205,7 +205,7 @@ class ImportCommand extends Command
             $this->io->title('The following properties won\'t be imported by this tool:');
             $this->io->listing($invalidHeaders);
             $this->io->text(
-                'They are either not defined in your PIM for this reference entity, or their context is not valid (channel or locale unrecognized)'
+                'They are either not defined in your PIM for this Asset manager, or their context is not valid (channel or locale unrecognized)'
             );
 
             $this->io->title('The following properties are not supported by this tool and will be skipped:');
@@ -224,10 +224,10 @@ class ImportCommand extends Command
         return array_diff($validHeaders, $unsupportedHeaders);
     }
 
-    private function importRecords(
+    private function importAssets(
         OutputInterface $output,
         string $filePath,
-        string $referenceEntityCode,
+        string $assetFamilyCode,
         array $validValueKeys,
         array $attributes,
         array $channels
@@ -235,9 +235,9 @@ class ImportCommand extends Command
         $progressBar = new ProgressBar($output, $this->reader->count());
         $progressBar->start();
 
-        $recordWriter = new RecordWriter($this->apiClient);
+        $assetWriter = new AssetWriter($this->apiClient);
 
-        $recordsToWrite = [];
+        $assetsToWrite = [];
         $linesToWrite = [];
 
         foreach ($this->reader as $lineNumber => $row) {
@@ -262,7 +262,7 @@ class ImportCommand extends Command
             $validStructure = array_intersect_key($structure, array_flip($validHeaders));
 
             try {
-                $recordsToWrite[] = $this->processor->process($line, $validStructure, $filePath);
+                $assetsToWrite[] = $this->processor->process($line, $validStructure, $filePath);
             } catch (\Exception $e) {
                 $this->skipRowWithMessage($filePath, $row, $e->getMessage());
 
@@ -270,31 +270,31 @@ class ImportCommand extends Command
             }
             $linesToWrite[] = $line;
 
-            if (count($recordsToWrite) === self::BATCH_SIZE) {
-                $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite);
+            if (count($assetsToWrite) === self::BATCH_SIZE) {
+                $this->writeAssets($filePath, $assetFamilyCode, $assetWriter, $assetsToWrite, $linesToWrite);
 
-                $recordsToWrite = [];
+                $assetsToWrite = [];
                 $linesToWrite = [];
                 $progressBar->advance(self::BATCH_SIZE);
             }
         }
 
-        if (!empty($recordsToWrite)) {
-            $this->writeRecords($filePath, $referenceEntityCode, $recordWriter, $recordsToWrite, $linesToWrite);
-            $progressBar->advance(count($recordsToWrite));
+        if (!empty($assetsToWrite)) {
+            $this->writeAssets($filePath, $assetFamilyCode, $assetWriter, $assetsToWrite, $linesToWrite);
+            $progressBar->advance(count($assetsToWrite));
         }
 
         $progressBar->finish();
     }
 
-    private function writeRecords(
+    private function writeAssets(
         string $filePath,
-        string $referenceEntityCode,
-        RecordWriter $recordWriter,
-        array $recordsToWrite,
+        string $assetFamilyCode,
+        AssetWriter $assetWriter,
+        array $assetsToWrite,
         array $linesToWrite
     ): void {
-        $responses = $recordWriter->write($referenceEntityCode, $recordsToWrite);
+        $responses = $assetWriter->write($assetFamilyCode, $assetsToWrite);
 
         $this->logger->logResponses($responses);
         $this->invalidFileGenerator->fromResponses($responses, $linesToWrite, $filePath, $this->reader->getHeaders());

@@ -6,7 +6,7 @@ namespace App\Writer;
 
 use Akeneo\PimEnterprise\ApiClient\AkeneoPimEnterpriseClientInterface;
 
-class RecordWriter
+class AssetWriter
 {
     /** @var AkeneoPimEnterpriseClientInterface */
     private $client;
@@ -16,8 +16,8 @@ class RecordWriter
         $this->client = $client;
     }
 
-    public function write(string $referenceEntityCode, array $records): array
+    public function write(string $assetCode, array $assets): array
     {
-        return $this->client->getReferenceEntityRecordApi()->upsertList($referenceEntityCode, $records);
+        return $this->client->getAssetManagerApi()->upsertList($assetCode, $assets);
     }
 }

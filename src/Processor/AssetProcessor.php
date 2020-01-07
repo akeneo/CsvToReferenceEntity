@@ -6,7 +6,7 @@ namespace App\Processor;
 
 use App\Processor\Converter\DataConverter;
 
-class RecordProcessor
+class AssetProcessor
 {
     /** @var ValueKeyGenerator */
     private $valueKeyGenerator;
